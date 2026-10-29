@@ -1,5 +1,3 @@
-!pip -q install textblob nltk
-
 import nltk
 
 nltk.download('punkt', quiet=True)
