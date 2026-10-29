@@ -1,124 +1,118 @@
+
+import streamlit as st
 import nltk
-
-nltk.download('punkt', quiet=True)
-nltk.download('punkt_tab', quiet=True)
-nltk.download('brown', quiet=True)
-
-print("Librerías instaladas correctamente.")
-import nltk
-
 from textblob import TextBlob
 
-# Título y explicación
-display(HTML("""
-<div style="display:flex; font-family:Arial; border-radius:8px;
-            overflow:hidden; border:1px solid #ddd;">
+# Configuración de la aplicación
+st.set_page_config(
+    page_title="Uso de TextBlob",
+    page_icon="💬",
+    layout="wide"
+)
 
-  <div style="background:#f0f2f6; padding:25px; width:240px;
-              color:#333; flex-shrink:0;">
-    <h3>Polaridad y Subjetividad</h3>
-    <p><b>Polaridad:</b> indica si el sentimiento es positivo,
-    negativo o neutral. Va de -1 a +1.</p>
-    <p><b>Subjetividad:</b> mide cuánto expresa opiniones
-    o emociones. Va de 0 a 1.</p>
-  </div>
+# Recursos de NLTK
+@st.cache_resource
+def preparar_nltk():
+    nltk.download("punkt", quiet=True)
+    nltk.download("punkt_tab", quiet=True)
 
-  <div style="padding:25px; flex:1; color:#333;">
-    <h1>Uso de textblob</h1>
-    <p>Escribe una frase en inglés para analizar su sentimiento.</p>
-  </div>
+preparar_nltk()
 
-</div>
-"""))
+# Barra lateral
+with st.sidebar:
+    st.subheader("Polaridad y Subjetividad")
 
-# Entrada de texto
-texto = widgets.Textarea(
+    st.write("""
+    **Polaridad:** indica si el sentimiento es positivo,
+    negativo o neutral.
+
+    - -1: muy negativo
+    - 0: neutral
+    - +1: muy positivo
+
+    **Subjetividad:** mide cuánto expresa opiniones
+    o emociones.
+
+    - 0: objetivo
+    - 1: subjetivo
+    """)
+
+# Interfaz principal
+st.title("Uso de TextBlob")
+
+st.write(
+    "Por favor, escribe en el campo de texto "
+    "la frase que deseas analizar."
+)
+
+texto = st.text_area(
+    "Escribe tu frase:",
     value="I am sad",
-    description="Escribe:",
-    layout=widgets.Layout(width="100%", height="100px")
+    height=120
 )
 
-boton = widgets.Button(
-    description="Analizar sentimiento",
-    button_style="primary",
-    layout=widgets.Layout(width="220px")
-)
+if st.button("Analizar sentimiento", type="primary"):
 
-resultado = widgets.Output()
+    if not texto.strip():
+        st.warning("Primero debes escribir una frase.")
 
-display(texto, boton, resultado)
-
-
-# Función de análisis
-def analizar(b):
-
-    with resultado:
-        clear_output()
-
-        frase = texto.value.strip()
-
-        if not frase:
-            print("Escribe una frase antes de analizar.")
-            return
-
-        # PLN: tokenización con NLTK
-        palabras = nltk.word_tokenize(frase)
-
-        # Análisis con TextBlob
-        analisis = TextBlob(frase)
+    else:
+        # Análisis de sentimientos
+        analisis = TextBlob(texto.strip())
         polaridad = analisis.sentiment.polarity
         subjetividad = analisis.sentiment.subjectivity
 
+        # Resultados numéricos
+        col1, col2 = st.columns(2)
+
+        col1.metric("Polarity", f"{polaridad:.3f}")
+        col2.metric("Subjectivity", f"{subjetividad:.3f}")
+
         # Clasificación e interacción
         if polaridad < -0.1:
-            sentimiento = "Negativo"
-            color = "#dc3545"
-            respuesta = (
-                "El texto expresa un sentimiento negativo. "
+            st.error("Es un sentimiento negativo")
+
+            st.write(
+                "El texto transmite una emoción desfavorable. "
                 "¿Quieres contarme qué ocurrió?"
             )
 
         elif polaridad > 0.1:
-            sentimiento = "Positivo"
-            color = "#198754"
-            respuesta = (
-                "El texto expresa un sentimiento positivo. "
-                "¿Qué te hizo sentir así?"
+            st.success("Es un sentimiento positivo")
+
+            st.write(
+                "El texto transmite una emoción favorable. "
+                "¿Qué fue lo mejor de esa experiencia?"
             )
 
         else:
-            sentimiento = "Neutral"
-            color = "#6c757d"
-            respuesta = (
+            st.info("Es un sentimiento neutral")
+
+            st.write(
                 "El texto parece neutral. "
                 "¿Quieres añadir más detalles?"
             )
 
-        # Mostrar resultados
-        display(HTML(f"""
-        <div style="font-family:Arial; padding:20px;
-                    border:1px solid #ddd; border-radius:10px;
-                    margin-top:15px; color:#333;">
+        # Procesamiento de lenguaje natural
+        with st.expander("Detalles del procesamiento NLP"):
 
-            <h2 style="color:{color};">
-                Sentimiento {sentimiento}
-            </h2>
+            tokens = nltk.word_tokenize(texto.strip())
 
-            <p><b>Polarity:</b> {polaridad:.3f}</p>
-            <p><b>Subjectivity:</b> {subjetividad:.3f}</p>
+            st.write("Texto original:", texto)
+            st.write("Tokens detectados:", tokens)
+            st.write("Número de tokens:", len(tokens))
 
-            <hr>
+        # Corrección ortográfica en inglés
+        with st.expander("Corrección en inglés"):
 
-            <h3>Respuesta de la aplicación</h3>
-            <p>{respuesta}</p>
+            corregido = str(analisis.correct())
 
-            <h3>Procesamiento NLP con NLTK</h3>
-            <p><b>Palabras identificadas:</b> {len(palabras)}</p>
-            <p><b>Tokens:</b> {palabras}</p>
+            st.write("Texto original:", texto)
+            st.write("Texto corregido:", corregido)
 
-        </div>
-        """))
+st.divider()
 
-
-boton.on_click(analizar)
-# Aplicación de análisis de sentimientos
+st.caption(
+    "Aplicación educativa de PLN con Python, TextBlob y NLTK. "
+    "El análisis de sentimientos está orientado principalmente al inglés."
+)
