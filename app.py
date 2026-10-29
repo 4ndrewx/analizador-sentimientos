@@ -6,10 +6,8 @@ nltk.download('brown', quiet=True)
 
 print("Librerías instaladas correctamente.")
 import nltk
-import ipywidgets as widgets
 
 from textblob import TextBlob
-from IPython.display import display, HTML, clear_output
 
 # Título y explicación
 display(HTML("""
